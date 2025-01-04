@@ -9,5 +9,6 @@ public class DecodeResponse {
 
     private String file;
 
-    private int[][] setArray;
+    private int[] blockOrder;
+//    private int[][] setArray;
 }
