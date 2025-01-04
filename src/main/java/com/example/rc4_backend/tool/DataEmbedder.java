@@ -16,14 +16,18 @@ import java.util.List;
 import java.util.Random;
 
 public class DataEmbedder {
-    private static DataEmbedder dataEmbedder;
+    private volatile static DataEmbedder dataEmbedder;
     private DataEmbedder(){};
     public int[][] setArray;
     public int matrixCnt = 0;
     public int imageIndex = 0;
-    public static synchronized DataEmbedder getInstance() {
+    public static DataEmbedder getInstance() {
         if (dataEmbedder == null) {
-            dataEmbedder = new DataEmbedder();
+            synchronized (DataEmbedder.class) {
+                if (dataEmbedder == null) {
+                    dataEmbedder = new DataEmbedder();
+                }
+            }
         }
         return dataEmbedder;
     }
