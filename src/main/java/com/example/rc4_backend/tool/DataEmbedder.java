@@ -30,15 +30,15 @@ public class DataEmbedder {
     private int[] blockOrder;
     // data-hiding key
     private static final String dataHidingKey = "an dataHidingKey";
-    public static final String imageWithInfoPath = "D:\\idea\\project\\rc4_backend\\src\\main\\resources\\image";
-    public static final String orderTxtPath = "D:\\idea\\project\\rc4_backend\\src\\main\\resources\\orderTxt";
+    public static final String imageWithInfoPath = "src\\main\\resources\\image";
+    public static final String orderTxtPath = "src\\main\\resources\\orderTxt";
     public EmbedderResponse Embed(MultipartFile file) throws IOException {
         // 加载原始图像
         InputStream inputStream = file.getInputStream();
         BufferedImage image = ImageIO.read(inputStream);
 
         // 要嵌入的消息
-        String message = new String(Files.readAllBytes(Paths.get("D:\\idea\\project\\rc4_backend\\src\\main\\resources\\hidden_message.txt")));
+        String message = new String(Files.readAllBytes(Paths.get("src\\main\\resources\\hidden_message.txt")));
 
         // 将消息转换为二进制字符串
         String binaryMessage = stringToBinary(message) + "00000000"; // 添加结束标志
