@@ -11,39 +11,30 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 public class DataEmbedder {
-    public DataEmbedder(int blockSize,int groupSize,String dataHidingKey){
-        this.blockSize = blockSize;
-        this.groupSize = groupSize;
-        this.dataHidingKey = dataHidingKey;
-    };
-    public DataEmbedder()
-    {
-        this(8,8,"an dataHidingKey");
+    private static class DataEmbedderHolder {
+        private static final DataEmbedder INSTANCE = new DataEmbedder();
     }
-//    public int[][] setArray;
-//    public int matrixCnt = 0;
-    public int imageIndex;
+    public static DataEmbedder getInstance() {
+        return DataEmbedderHolder.INSTANCE;
+    }
+
     // 块大小
-    private int blockSize;
+    private static final int blockSize = 8;
     //将图像分为n个块， n = width * height / (blockSize * blockSize)
     //将k个块划分为一组，共有g =  n/groupSize 组。分组方式由dataHidingKey随机生成
     //此处根据dataHidingKey生成n个不重复的随机数，范围0-n，存入blockOrder,表示打乱后的block顺序。
     //在blockOrder中，每groupSize个块表示一个组。
-    private int groupSize;
+    private static final int groupSize = 8;
     private int[] blockOrder;
+    // TODO 程序重启后 orderCnt 和 imageIndex 都会重置为0，会把之前的图片覆盖，考虑修复。
     private int orderCnt = 0;
-    private int matrixCnt = 0;
+    private int imageIndex = 0;
     // data-hiding key
-    private String dataHidingKey;
-
-
+    private static final String dataHidingKey = "an dataHidingKey";
     public static final String imageWithInfoPath = "D:\\idea\\project\\rc4_backend\\src\\main\\resources\\image";
-    public static final String matrixTxtPath = "D:\\idea\\project\\rc4_backend\\src\\main\\resources\\matrixTxt";
     public static final String orderTxtPath = "D:\\idea\\project\\rc4_backend\\src\\main\\resources\\orderTxt";
     public EmbedderResponse Embed(MultipartFile file) throws IOException {
 
@@ -69,13 +60,12 @@ public class DataEmbedder {
         String filePath = orderTxtPath + orderCnt + ".png";
         saveBlockOrder(blockOrder,filePath);
         orderCnt++;
-
         // 保存嵌入后的图像
         ImageIO.write(embeddedImage, "png", new File(imageWithInfoPath + imageIndex));
         EmbedderResponse response = new EmbedderResponse();
         response.setImageIndex(imageIndex);
+        imageIndex++;
         response.setBlockOrder(blockOrder);
-//        response.setSetArray(setArray);
         return response;
     }
 
