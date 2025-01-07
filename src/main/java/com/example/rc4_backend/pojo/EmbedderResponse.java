@@ -5,7 +5,6 @@ import lombok.Data;
 @Data
 public class EmbedderResponse {
 
-//    private int[][] setArray;
     private int[] blockOrder;
-    private int imageIndex;
+    private String embedderdFilePath;
 }

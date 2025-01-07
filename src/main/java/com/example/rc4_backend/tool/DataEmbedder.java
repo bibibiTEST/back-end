@@ -5,12 +5,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Random;
 
 public class DataEmbedder {
@@ -29,25 +28,20 @@ public class DataEmbedder {
     //在blockOrder中，每groupSize个块表示一个组。
     private static final int groupSize = 8;
     private int[] blockOrder;
-    // TODO 程序重启后 orderCnt 和 imageIndex 都会重置为0，会把之前的图片覆盖，考虑修复。
-    private int orderCnt = 0;
-    private int imageIndex = 0;
     // data-hiding key
     private static final String dataHidingKey = "an dataHidingKey";
     public static final String imageWithInfoPath = "D:\\idea\\project\\rc4_backend\\src\\main\\resources\\image";
     public static final String orderTxtPath = "D:\\idea\\project\\rc4_backend\\src\\main\\resources\\orderTxt";
     public EmbedderResponse Embed(MultipartFile file) throws IOException {
-
         // 加载原始图像
-        BufferedImage image = ImageIO.read((File) file);
+        InputStream inputStream = file.getInputStream();
+        BufferedImage image = ImageIO.read(inputStream);
 
         // 要嵌入的消息
-
-        String message = new String(Files.readAllBytes(Paths.get("src/main/java/com/xeno/rdhei/util/hidden_message.txt")));
+        String message = new String(Files.readAllBytes(Paths.get("D:\\idea\\project\\rc4_backend\\src\\main\\resources\\hidden_message.txt")));
 
         // 将消息转换为二进制字符串
         String binaryMessage = stringToBinary(message) + "00000000"; // 添加结束标志
-        System.out.println(binaryMessage);
 
         // 嵌入信息
         BufferedImage embeddedImage = embedMessage(image, binaryMessage, dataHidingKey);
@@ -56,15 +50,22 @@ public class DataEmbedder {
 //        String filePath = matrixTxtPath + matrixCnt + ".png";
 //        writeArrayToFile(setArray, filePath);
 //        matrixCnt++;
-        //写入块order
-        String filePath = orderTxtPath + orderCnt + ".png";
-        saveBlockOrder(blockOrder,filePath);
-        orderCnt++;
+        // 获取当前时间戳
+        long timestamp = System.currentTimeMillis();
+        // 格式化时间戳为文件名
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS");
+        String formattedTimestamp = sdf.format(new Date(timestamp));
+        // 写入块order
+        String orderTxtName = formattedTimestamp + ".txt";
+        File orderTxt = new File(orderTxtPath, orderTxtName);
+        saveBlockOrder(blockOrder, orderTxt);
         // 保存嵌入后的图像
-        ImageIO.write(embeddedImage, "png", new File(imageWithInfoPath + imageIndex));
+        String embedderdFileName = formattedTimestamp + ".png"; // 使用 PNG 格式，可以根据需要更改
+        File embedderdFile = new File(imageWithInfoPath, embedderdFileName);
+        ImageIO.write(embeddedImage, "png", embedderdFile);
         EmbedderResponse response = new EmbedderResponse();
-        response.setImageIndex(imageIndex);
-        imageIndex++;
+        // 嵌入后图片的路径
+        response.setEmbedderdFilePath(embedderdFile.getAbsolutePath());
         response.setBlockOrder(blockOrder);
         return response;
     }
@@ -156,8 +157,8 @@ public class DataEmbedder {
         }
     }
     //写BlockOrder入文件。
-    private void saveBlockOrder(int[] blockOrder, String filePath) throws IOException {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+    private void saveBlockOrder(int[] blockOrder, File orderTxt) throws IOException {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(orderTxt))) {
             for (int order : blockOrder) {
                 writer.write(order + " ");
             }

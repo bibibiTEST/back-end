@@ -4,9 +4,7 @@ import com.example.rc4_backend.pojo.DecodeResponse;
 import com.example.rc4_backend.pojo.EmbedderResponse;
 import com.example.rc4_backend.tool.DataEmbedder;
 import com.example.rc4_backend.tool.ThreadPoolTool;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -24,7 +22,7 @@ public class rc4Controller {
      * @return
      */
     @PostMapping(value = "/sendMsg")
-    public String sendMsg(MultipartFile file, int sendId) {
+    public String sendMsg(MultipartFile file, @RequestParam("sendId") int sendId) {
         if (sendId != 1 && sendId != 2) {
             return "当前id有误";
         }
@@ -52,10 +50,9 @@ public class rc4Controller {
         if (response == null) {
             return "调用嵌入算法未正确返回结果";
         }
-        int imageIndex = response.getImageIndex();
         int id = sendId == 1 ? 2 : 1;
         DecodeResponse decodeResponse = DecodeResponse.builder()
-                .file(DataEmbedder.imageWithInfoPath + imageIndex + ".png")
+                .file(response.getEmbedderdFilePath())
                 .blockOrder(response.getBlockOrder()).build();
         receiveIdToFileMap.put(id, decodeResponse);
         return "嵌入任务已提交";
@@ -66,12 +63,15 @@ public class rc4Controller {
      * @param receivedId
      * @return
      */
-    @PostMapping(value = "/receiveMsg")
-    public DecodeResponse receiveMsg(int receivedId) {
+    @GetMapping(value = "/receiveMsg")
+    public DecodeResponse receiveMsg(@RequestParam("receivedId") int receivedId) {
         if (receivedId != 1 && receivedId != 2) {
-            throw new RuntimeException("当前id有误");
+            throw new IllegalArgumentException("当前id有误");
         }
-        return receiveIdToFileMap.get(receivedId);
+        if (receiveIdToFileMap.containsKey(receivedId)) {
+            return receiveIdToFileMap.get(receivedId);
+        }
+        return null;
     }
 
 
