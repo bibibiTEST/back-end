@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.concurrent.*;
 
 @RestController
-@RequestMapping("/api/rc4")
+@RequestMapping("/api")
 public class rc4Controller {
     private volatile HashMap<Integer, DecodeResponse> receiveIdToFileMap = new HashMap<>();
     /**
@@ -21,8 +21,8 @@ public class rc4Controller {
      * @param sendId
      * @return
      */
-    @PostMapping(value = "/sendMsg")
-    public String sendMsg(MultipartFile file, @RequestParam("sendId") int sendId) {
+    @PostMapping(value = "/upload")
+    public String upload(MultipartFile file, @RequestParam("sendId") int sendId) {
         if (sendId != 1 && sendId != 2) {
             return "当前id有误";
         }
@@ -63,8 +63,8 @@ public class rc4Controller {
      * @param receivedId
      * @return
      */
-    @GetMapping(value = "/receiveMsg")
-    public DecodeResponse receiveMsg(@RequestParam("receivedId") int receivedId) {
+    @GetMapping(value = "/messages")
+    public DecodeResponse messages(@RequestParam("receivedId") int receivedId) {
         if (receivedId != 1 && receivedId != 2) {
             throw new IllegalArgumentException("当前id有误");
         }
