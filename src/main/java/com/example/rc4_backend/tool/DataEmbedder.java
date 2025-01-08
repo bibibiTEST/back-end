@@ -4,7 +4,9 @@ import com.example.rc4_backend.pojo.EmbedderResponse;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.awt.image.WritableRaster;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -42,18 +44,18 @@ public class DataEmbedder {
     private String dataHidingKey;
 
 
-    public static final String imageWithInfoPath = "D:\\idea\\project\\rc4_backend\\src\\main\\resources\\image";
+    public static final String imageWithInfoPath = "src\\main\\resources\\image";
     public static final String matrixTxtPath = "D:\\idea\\project\\rc4_backend\\src\\main\\resources\\matrixTxt";
-    public static final String orderTxtPath = "D:\\idea\\project\\rc4_backend\\src\\main\\resources\\orderTxt";
+    public static final String orderTxtPath = "src\\main\\resources\\orderTxt";
     public EmbedderResponse Embed(MultipartFile file) throws IOException {
 
         // 加载原始图像
-        BufferedImage image = ImageIO.read((File) file);
+        BufferedImage image = ImageIO.read(file.getInputStream());
 
         // 要嵌入的消息
 
-        String message = new String(Files.readAllBytes(Paths.get("src/main/java/com/xeno/rdhei/util/hidden_message.txt")));
-
+//        String message = new String(Files.readAllBytes(Paths.get("")));
+        String message = "letsGo!";
         // 将消息转换为二进制字符串
         String binaryMessage = stringToBinary(message) + "00000000"; // 添加结束标志
         System.out.println(binaryMessage);
@@ -66,12 +68,12 @@ public class DataEmbedder {
 //        writeArrayToFile(setArray, filePath);
 //        matrixCnt++;
         //写入块order
-        String filePath = orderTxtPath + orderCnt + ".png";
+        String filePath = orderTxtPath + "\\order" + orderCnt + ".txt";
         saveBlockOrder(blockOrder,filePath);
         orderCnt++;
 
         // 保存嵌入后的图像
-        ImageIO.write(embeddedImage, "png", new File(imageWithInfoPath + imageIndex));
+        ImageIO.write(embeddedImage, "png", new File(imageWithInfoPath + "\\image" +imageIndex + ".png"));
         EmbedderResponse response = new EmbedderResponse();
         response.setImageIndex(imageIndex);
         response.setBlockOrder(blockOrder);
@@ -130,14 +132,17 @@ public class DataEmbedder {
         int t = (int) (Math.log(groupSize) / Math.log(2)); // t = log2(groupSize)
         int n = width * height / (blockSize * blockSize);
         int g = n/groupSize;
-
+        System.out.println(image.getType());
         BufferedImage embeddedImage = new BufferedImage(image.getWidth(), image.getHeight(), image.getType());
         embeddedImage.getGraphics().drawImage(image, 0, 0, null);
-
-        while (bitIndex + t <= g) {
+        System.out.printf("length: %d\n",binaryMessage.length());
+        System.out.printf("groupNum:%d\n",g);
+        while (bitIndex + t <= binaryMessage.length()){
             String binaryNumber = binaryMessage.substring(bitIndex, bitIndex + t);
+            System.out.printf(binaryNumber+" ");
             int decimalNumber = Integer.parseInt(binaryNumber, 2); // 转换为十进制数
-
+            System.out.printf("%d ",decimalNumber);
+            System.out.println();
             // 获取组中第 m+1 个块
             int startIndexInGroup = (bitIndex / t) * groupSize; // 组的起始索引
             int blockIndex = startIndexInGroup + decimalNumber;
@@ -151,6 +156,16 @@ public class DataEmbedder {
         }
         return embeddedImage;
     }
+    public void test(String path,int x,int y) throws IOException {
+        BufferedImage image = ImageIO.read(new File(path));
+        int rgb = image.getRGB(x,y);
+        int red = (rgb >> 16) & 0xFF;
+        int green = (rgb >> 8) & 0xFF;
+        int blue = rgb & 0xFF;
+        int gray = (int) (red * 0.299 + green * 0.587 + blue * 0.114);
+        int grayValue = image.getRaster().getSample(x, y, 0);
+        System.out.printf("%d,%d坐标值：rgb:%d,gray:%d\n",x,y,rgb,gray);
+    }
     private void modifyBlock(BufferedImage block) {
         int width = block.getWidth();
         int height = block.getHeight();
@@ -158,15 +173,18 @@ public class DataEmbedder {
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 if ((x + y) % 2 == 0) {
-                    int rgb = block.getRGB(x, y);
-                    int modifiedPixel = rgb ^ 0x07;
-                    block.setRGB(x, y, modifiedPixel);
+                    int gray = block.getRaster().getSample(x, y, 0);
+                    int modifiedGray = gray ^ 0b00001000;
+                    WritableRaster raster = block.getRaster();
+                    raster.setSample(x, y, 0, modifiedGray);
                 }
             }
         }
     }
+
     //写BlockOrder入文件。
     private void saveBlockOrder(int[] blockOrder, String filePath) throws IOException {
+        System.out.printf("blockNum:%d\n",blockOrder.length);
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
             for (int order : blockOrder) {
                 writer.write(order + " ");
