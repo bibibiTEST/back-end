@@ -4,16 +4,12 @@ import com.example.rc4_backend.pojo.EmbedderResponse;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.WritableRaster;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Random;
@@ -34,14 +30,9 @@ public class DataEmbedder {
     //在blockOrder中，每groupSize个块表示一个组。
     private static final int groupSize = 8;
     private int[] blockOrder;
-    // data-hiding key
-    private String dataHidingKey;
-
 
     public static final String imageWithInfoPath = "src\\main\\resources\\image";
-    public static final String matrixTxtPath = "D:\\idea\\project\\rc4_backend\\src\\main\\resources\\matrixTxt";
     private static final String dataHidingKey = "an dataHidingKey";
-    public static final String imageWithInfoPath = "src\\main\\resources\\image";3
     public static final String orderTxtPath = "src\\main\\resources\\orderTxt";
     public EmbedderResponse Embed(MultipartFile file) throws IOException {
         // 加载原始图像

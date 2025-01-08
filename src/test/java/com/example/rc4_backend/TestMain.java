@@ -1,8 +1,8 @@
 package com.example.rc4_backend;
+
 import com.example.rc4_backend.pojo.EmbedderResponse;
 import com.example.rc4_backend.tool.DataEmbedder;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,7 +13,7 @@ public class TestMain {
 
     public static void main(String[] args) throws IOException {
         String dataHidingKey = "key";
-        DataEmbedder dataEmbedder = new DataEmbedder(8,8,dataHidingKey);
+        DataEmbedder dataEmbedder = DataEmbedder.getInstance();
         String filePath = "encrypted_image2.png";
         File file = new File(filePath);
         FileInputStream fileInputStream = new FileInputStream(file);
