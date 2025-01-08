@@ -11,44 +11,39 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Random;
 
 public class DataEmbedder {
-    public DataEmbedder(int blockSize,int groupSize,String dataHidingKey){
-        this.blockSize = blockSize;
-        this.groupSize = groupSize;
-        this.dataHidingKey = dataHidingKey;
-    };
-    public DataEmbedder()
-    {
-        this(8,8,"an dataHidingKey");
+    private static class DataEmbedderHolder {
+        private static final DataEmbedder INSTANCE = new DataEmbedder();
     }
-//    public int[][] setArray;
-//    public int matrixCnt = 0;
-    public int imageIndex;
+    public static DataEmbedder getInstance() {
+        return DataEmbedderHolder.INSTANCE;
+    }
+
     // 块大小
-    private int blockSize;
+    private static final int blockSize = 8;
     //将图像分为n个块， n = width * height / (blockSize * blockSize)
     //将k个块划分为一组，共有g =  n/groupSize 组。分组方式由dataHidingKey随机生成
     //此处根据dataHidingKey生成n个不重复的随机数，范围0-n，存入blockOrder,表示打乱后的block顺序。
     //在blockOrder中，每groupSize个块表示一个组。
-    private int groupSize;
+    private static final int groupSize = 8;
     private int[] blockOrder;
-    private int orderCnt = 0;
-    private int matrixCnt = 0;
     // data-hiding key
     private String dataHidingKey;
 
 
     public static final String imageWithInfoPath = "src\\main\\resources\\image";
     public static final String matrixTxtPath = "D:\\idea\\project\\rc4_backend\\src\\main\\resources\\matrixTxt";
+    private static final String dataHidingKey = "an dataHidingKey";
+    public static final String imageWithInfoPath = "src\\main\\resources\\image";3
     public static final String orderTxtPath = "src\\main\\resources\\orderTxt";
     public EmbedderResponse Embed(MultipartFile file) throws IOException {
-
         // 加载原始图像
         BufferedImage image = ImageIO.read(file.getInputStream());
 
@@ -58,7 +53,6 @@ public class DataEmbedder {
         String message = "letsGo!";
         // 将消息转换为二进制字符串
         String binaryMessage = stringToBinary(message) + "00000000"; // 添加结束标志
-        System.out.println(binaryMessage);
 
         // 嵌入信息
         BufferedImage embeddedImage = embedMessage(image, binaryMessage, dataHidingKey);
@@ -67,17 +61,23 @@ public class DataEmbedder {
 //        String filePath = matrixTxtPath + matrixCnt + ".png";
 //        writeArrayToFile(setArray, filePath);
 //        matrixCnt++;
-        //写入块order
-        String filePath = orderTxtPath + "\\order" + orderCnt + ".txt";
-        saveBlockOrder(blockOrder,filePath);
-        orderCnt++;
-
+        // 获取当前时间戳
+        long timestamp = System.currentTimeMillis();
+        // 格式化时间戳为文件名
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss_SSS");
+        String formattedTimestamp = sdf.format(new Date(timestamp));
+        // 写入块order
+        String orderTxtName = formattedTimestamp + ".txt";
+        File orderTxt = new File(orderTxtPath, orderTxtName);
+        saveBlockOrder(blockOrder, orderTxt);
         // 保存嵌入后的图像
-        ImageIO.write(embeddedImage, "png", new File(imageWithInfoPath + "\\image" +imageIndex + ".png"));
+        String embedderdFileName = formattedTimestamp + ".png"; // 使用 PNG 格式，可以根据需要更改
+        File embedderdFile = new File(imageWithInfoPath, embedderdFileName);
+        ImageIO.write(embeddedImage, "png", embedderdFile);
         EmbedderResponse response = new EmbedderResponse();
-        response.setImageIndex(imageIndex);
+        // 嵌入后图片的路径
+        response.setEmbedderdFilePath(embedderdFile.getAbsolutePath());
         response.setBlockOrder(blockOrder);
-//        response.setSetArray(setArray);
         return response;
     }
 
@@ -183,9 +183,8 @@ public class DataEmbedder {
     }
 
     //写BlockOrder入文件。
-    private void saveBlockOrder(int[] blockOrder, String filePath) throws IOException {
-        System.out.printf("blockNum:%d\n",blockOrder.length);
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+    private void saveBlockOrder(int[] blockOrder, File orderTxt) throws IOException {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(orderTxt))) {
             for (int order : blockOrder) {
                 writer.write(order + " ");
             }
