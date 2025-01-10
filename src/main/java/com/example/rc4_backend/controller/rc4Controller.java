@@ -1,6 +1,6 @@
 package com.example.rc4_backend.controller;
 
-import com.example.rc4_backend.pojo.DecodeResponse;
+import com.example.rc4_backend.pojo.ChatMessage;
 import com.example.rc4_backend.pojo.EmbedderResponse;
 import com.example.rc4_backend.tool.DataEmbedder;
 import com.example.rc4_backend.tool.ThreadPoolTool;
@@ -14,20 +14,24 @@ import java.util.concurrent.*;
 @RestController
 @RequestMapping("/api")
 public class rc4Controller {
-    private volatile HashMap<Integer, DecodeResponse> receiveIdToFileMap = new HashMap<>();
+    private volatile HashMap<Integer, ChatMessage> receiveIdToFileMap = new HashMap<>();
+    private rc4Controller() {
+        receiveIdToFileMap.put(1, ChatMessage.builder()
+                .content(" ").blockOrder(null).build());
+        receiveIdToFileMap.put(2, ChatMessage.builder()
+                .content(" ").blockOrder(null).build());
+    }
     /**
      * 发送图片
      * @param file
-     * @param sendId
+     * @param userId
      * @return
      */
     @PostMapping(value = "/upload")
-    public String upload(MultipartFile file, @RequestParam("sendId") int sendId) {
-        if (sendId != 1 && sendId != 2) {
+    public String upload(MultipartFile file, @RequestParam("userId") int userId) {
+        System.out.println("收到请求:" + file.getName() + " :" + userId);
+        if (userId != 1 && userId != 2) {
             return "当前id有误";
-        }
-        if (file == null) {
-            return "图片为空";
         }
         ThreadPoolExecutor executor = ThreadPoolTool.embedderThreadPool;
         DataEmbedder dataEmbedder = DataEmbedder.getInstance();
@@ -42,7 +46,7 @@ public class rc4Controller {
                 }, executor);
         EmbedderResponse response;
         try {
-             response = future.get(2, TimeUnit.SECONDS);
+             response = future.get(10, TimeUnit.SECONDS);
         } catch (RuntimeException | InterruptedException | ExecutionException | TimeoutException e) {
             e.printStackTrace();
             return "get方法获取结果异常";
@@ -50,34 +54,32 @@ public class rc4Controller {
         if (response == null) {
             return "调用嵌入算法未正确返回结果";
         }
-        int id = sendId == 1 ? 2 : 1;
-        DecodeResponse decodeResponse = DecodeResponse.builder()
-                .file(response.getEmbedderdFilePath())
+        int id = userId == 1 ? 2 : 1;
+        ChatMessage chatMessage = ChatMessage.builder()
+                .content(response.getEmbedderdFilePath())
                 .blockOrder(response.getBlockOrder()).build();
-        receiveIdToFileMap.put(id, decodeResponse);
+        receiveIdToFileMap.put(id, chatMessage);
         return "嵌入任务已提交";
     }
 
     /**
      * 接收图片
-     * @param receivedId
+     * @param userId
      * @return
      */
     @GetMapping(value = "/messages")
-    public DecodeResponse messages(@RequestParam("receivedId") int receivedId) {
-        if (receivedId != 1 && receivedId != 2) {
+    public ChatMessage messages(@RequestParam("userId") int userId) {
+        if (userId != 1 && userId != 2) {
             throw new IllegalArgumentException("当前id有误");
         }
-        if (receiveIdToFileMap.containsKey(receivedId)) {
-            return receiveIdToFileMap.get(receivedId);
+        System.out.println(userId);
+        if (receiveIdToFileMap.containsKey(userId)) {
+            System.out.println("已拿到url："+ receiveIdToFileMap.get(userId).getContent());
+            return receiveIdToFileMap.get(userId);
+        } else {
+            System.out.println("该用户没收到消息");
         }
         return null;
-    }
-
-
-    @PostMapping(value = "/downloadImage")
-    public void downloadImage() {
-        //TODO 下载图片
     }
 
 }

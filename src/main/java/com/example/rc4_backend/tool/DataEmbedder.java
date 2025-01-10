@@ -6,18 +6,16 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.awt.image.WritableRaster;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 public class DataEmbedder {
+
     private static class DataEmbedderHolder {
         private static final DataEmbedder INSTANCE = new DataEmbedder();
     }
@@ -45,7 +43,6 @@ public class DataEmbedder {
         String message = "letsGo!";
         // 将消息转换为二进制字符串
         String binaryMessage = stringToBinary(message) + "000000000"; // 添加结束标志
-        System.out.println(binaryMessage);
         // 嵌入信息
         BufferedImage embeddedImage = embedMessage(image, binaryMessage, dataHidingKey);
         //旧--写入s矩阵
@@ -66,8 +63,12 @@ public class DataEmbedder {
         File embedderdFile = new File(imageWithInfoPath, embedderdFileName);
         ImageIO.write(embeddedImage, "png", embedderdFile);
         EmbedderResponse response = new EmbedderResponse();
+
+        AliOssUtil aliOssUtil = new AliOssUtil();
+        //文件的请求路径
+        String filePath = aliOssUtil.upload(file.getBytes(), embedderdFileName);
         // 嵌入后图片的路径
-        response.setEmbedderdFilePath(embedderdFile.getAbsolutePath());
+        response.setEmbedderdFilePath("/image/" + embedderdFileName);
         response.setBlockOrder(blockOrder);
         return response;
     }
@@ -100,13 +101,11 @@ public class DataEmbedder {
         {
             blockOrder.add(i);
         }
-        System.out.println(blockOrder.size());
         if(row_cut)
         {
             for(int i=0;i<block_per_row_up;i++)
             {
                 int order_be_cut = block_per_row_up * (block_per_column_up-1) + i;
-                System.out.printf("剔除：%d\n",order_be_cut);
                 blockOrder.remove((Integer) order_be_cut);
             }
         }
@@ -115,11 +114,9 @@ public class DataEmbedder {
             for(int i=0;i<block_per_column_up;i++)
             {
                 int order_be_cut = (block_per_row_up-1) + i*(block_per_row_up);
-                System.out.printf("剔除：%d\n",order_be_cut);
                 blockOrder.remove((Integer)order_be_cut);
             }
         }
-        System.out.println(blockOrder.size());
         for(int i=n-1;i>0;i--)
         {
             int j = random.nextInt(i+1);
@@ -154,18 +151,12 @@ public class DataEmbedder {
         int t = (int) (Math.log(groupSize) / Math.log(2)); // t = log2(groupSize)
         int n = (width/blockSize) * (height/blockSize);
         int g = n/groupSize;
-        System.out.println(image.getType());
         BufferedImage embeddedImage = new BufferedImage(image.getWidth(), image.getHeight(), image.getType());
         embeddedImage.getGraphics().drawImage(image, 0, 0, null);
-        System.out.printf("length: %d\n",binaryMessage.length());
-        System.out.printf("groupNum:%d\n",g);
         while (bitIndex < binaryMessage.length()){
             int next = Math.min(bitIndex + t, binaryMessage.length());
             String binaryNumber = binaryMessage.substring(bitIndex, next);
-            System.out.printf(binaryNumber+" ");
             int decimalNumber = Integer.parseInt(binaryNumber, 2); // 转换为十进制数
-            System.out.printf("%d ",decimalNumber);
-            System.out.println();
             // 获取组中第 m+1 个块
             int startIndexInGroup = (bitIndex / t) * groupSize; // 组的起始索引
             int blockIndex = startIndexInGroup + decimalNumber;
@@ -191,7 +182,6 @@ public class DataEmbedder {
         int _green = green ^ 0b00001000;
         int modifiedRGB = (rgb & 0xFFFF00FF) | (green << 8);
 
-        System.out.printf("%d,%d坐标值：blue:%d,green:%d,red:%d,gray:%d _green:%d, type: %d\n",x,y,blue,green,red,gray,_green,image.getType());
     }
     private void modifyBlock(BufferedImage block) {
         for (int y = 0; y < blockSize; y++) {
@@ -223,11 +213,8 @@ public class DataEmbedder {
             for (int[] row : array) {
                 StringBuilder line = new StringBuilder();
                 for (int value : row) {
-//                    System.out.print(value);
-//                    System.out.print(" ");
                     line.append(value).append(" ");
                 }
-//                System.out.println();
                 writer.write(line.toString().trim());
                 writer.newLine();
             }
