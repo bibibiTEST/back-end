@@ -20,7 +20,7 @@ public class TestMain {
         MockMultipartFile multipartFile = new MockMultipartFile(
                 "file",              // 文件名
                 file.getName(),      // 原始文件名
-                "image/jpeg",        // 文件类型（根据需要调整）
+                "image/png",        // 文件类型（根据需要调整）
                 fileInputStream      // 文件输入流
         );
 
